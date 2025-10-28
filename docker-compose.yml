@@ -1,0 +1,58 @@
+services:
+  fusio:
+    image: fusio/fusio:latest
+    container_name: fusio_app
+    ports:
+      - "8080:80"
+    environment:
+      - FUSIO_PROJECT_KEY=cee262a5a1bdd205cbfe0dfc2ad4eddf
+      - FUSIO_ENV=dev
+      - FUSIO_DEBUG=true
+      - FUSIO_CONNECTION=pdo-mysql://root:test1234@mysql:3306/fusio
+      - FUSIO_URL=http://localhost:8080
+      - FUSIO_APPS_URL=http://localhost:8080
+      - FUSIO_BACKEND_USER=admin
+      - FUSIO_BACKEND_EMAIL=admin@fusio-project.org
+      - FUSIO_BACKEND_PW=admin1234
+    depends_on:
+      - mysql
+    volumes:
+      - fusio_logs:/var/www/html/log
+      - fusio_cache:/var/www/html/cache
+    networks:
+      - fusio_network
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    container_name: fusio_mysql
+    ports:
+      - "3307:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=test1234
+      - MYSQL_DATABASE=fusio
+      - MYSQL_CHARACTER_SET_SERVER=utf8mb4
+      - MYSQL_COLLATION_SERVER=utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - fusio_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ptest1234"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  mysql_data:
+    driver: local
+  fusio_logs:
+    driver: local
+  fusio_cache:
+    driver: local
+
+networks:
+  fusio_network:
+    driver: bridge
